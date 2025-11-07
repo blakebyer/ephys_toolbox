@@ -20,17 +20,18 @@ class FiberVolleyAnalyzer(Analyzer):
         self.window = params.get("window", [0.0, 1.5]) if params else [0.0, 1.5]
 
     def run(self, context: RecordingContext) -> RecordingContext:
-        fv_df = self._calculate(context.averaged)
+        fs = context.averaged.attrs.get("sampling_rate")
+        fv_df = self._calculate(context.averaged, fs=fs)
         context.register_feature(self.name, fv_df)
         return context
 
-    def _calculate(self, abf_df: pd.DataFrame) -> pd.DataFrame:
+    def _calculate(self, abf_df: pd.DataFrame, fs: float | None = None) -> pd.DataFrame:
         t0, t1 = [v / 1000.0 for v in self.window]
         results = []
 
         for stim, g in abf_df.groupby("stim_intensity"):
             x = g["time"].to_numpy()
-            y = g["smooth"].to_numpy()
+            y = self.apply_smoothing(g["smooth"].to_numpy(), fs=fs)
 
             start_idx = np.searchsorted(x, t0)
             stop_idx = np.searchsorted(x, t1)

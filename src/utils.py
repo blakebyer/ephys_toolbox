@@ -50,6 +50,48 @@ def butterw(x, cutoff_hz, fs, order=4):
     b, a = butter(order, Wn, btype='low')
     return filtfilt(b, a, x)
 
+def build_smoother(config: Optional[Dict[str, Any]]):
+    """
+    Returns a callable that smooths a 1-D numpy array according to `config`.
+    Supported methods: moving_average (default), savgol, butter.
+    """
+    if not config:
+        return None
+
+    method = config.get("method", "moving_average").lower()
+
+    if method in {"moving_average", "boxcar", "ma"}:
+        window = max(1, int(config.get("window", 5)))
+
+        def smoother(data, **_):
+            return smooth(data, window_samples=window)
+
+        return smoother
+
+    if method in {"savgol", "sg"}:
+        window = int(config.get("window", 11))
+        if window % 2 == 0:
+            window += 1
+        poly = int(config.get("poly", 3))
+
+        def smoother(data, **_):
+            return savgol(data, window_samples=window, poly=poly)
+
+        return smoother
+
+    if method in {"butter", "butterworth"}:
+        cutoff = float(config.get("cutoff_hz", 2000))
+        order = int(config.get("order", 4))
+
+        def smoother(data, *, fs=None, **_):
+            if fs is None:
+                raise ValueError("Butterworth smoothing requires a sampling rate (fs).")
+            return butterw(data, cutoff_hz=cutoff, fs=fs, order=order)
+
+        return smoother
+
+    raise ValueError(f"Unknown smoothing method: {method}")
+
 def switch_channels(abf, channel: int = 0):
     if not isinstance(abf, pyabf.abf.ABF):
         return TypeError("Not an pyabf.abf.ABF object!")

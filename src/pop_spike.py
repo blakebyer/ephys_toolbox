@@ -24,16 +24,22 @@ class PopSpikeAnalyzer(Analyzer):
         epsp_df = context.get_feature("epsp")
         if epsp_df is None or epsp_df.empty:
             raise ValueError("EPSP results required before running PopSpikeAnalyzer.")
-        ps_df = self._calculate(context.averaged, epsp_df)
+        fs = context.averaged.attrs.get("sampling_rate")
+        ps_df = self._calculate(context.averaged, epsp_df, fs=fs)
         context.register_feature(self.name, ps_df)
         return context
 
-    def _calculate(self, abf_df: pd.DataFrame, epsp_df: pd.DataFrame) -> pd.DataFrame:
+    def _calculate(
+        self,
+        abf_df: pd.DataFrame,
+        epsp_df: pd.DataFrame,
+        fs: float | None = None,
+    ) -> pd.DataFrame:
         results = []
 
         for stim, g in abf_df.groupby("stim_intensity"):
             x = g["time"].to_numpy()
-            y = g["smooth"].to_numpy()
+            y = self.apply_smoothing(g["smooth"].to_numpy(), fs=fs)
 
             epsp_row = epsp_df.loc[epsp_df.stim_intensity == stim].iloc[0]
             epsp_min_s = epsp_row["epsp_min_s"]

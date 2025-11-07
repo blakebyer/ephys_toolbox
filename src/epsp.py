@@ -22,7 +22,8 @@ class EpspAnalyzer(Analyzer):
 
     def run(self, context: RecordingContext) -> RecordingContext:
         fv_df = context.get_feature("fiber_volley")
-        epsp_df = self._calculate(context.averaged, fv_df)
+        fs = context.averaged.attrs.get("sampling_rate")
+        epsp_df = self._calculate(context.averaged, fv_df, fs=fs)
         context.register_feature(self.name, epsp_df)
         return context
 
@@ -30,13 +31,14 @@ class EpspAnalyzer(Analyzer):
         self,
         abf_df: pd.DataFrame,
         fv_df: Optional[pd.DataFrame],
+        fs: float | None = None,
     ) -> pd.DataFrame:
         t0, t1 = [v / 1000.0 for v in self.window]
         results = []
 
         for stim, g in abf_df.groupby("stim_intensity"):
             x = g["time"].to_numpy()
-            y = g["smooth"].to_numpy()
+            y = self.apply_smoothing(g["smooth"].to_numpy(), fs=fs)
 
             start_idx = np.searchsorted(x, t0)
             stop_idx = np.searchsorted(x, t1)
@@ -74,8 +76,6 @@ class EpspAnalyzer(Analyzer):
                 "epsp_slope": float(abs(m)),
                 "epsp_slope_ms": float(abs(m) / 1000.0),
                 "epsp_r2": float(r2),
-                "fit_t": list(x[i0:i1 + 1]),
-                "fit_v": list(v_fit),
             })
 
         return pd.DataFrame(results)

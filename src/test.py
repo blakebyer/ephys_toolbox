@@ -15,7 +15,7 @@ cfg = PipelineConfig(
     epsp_window=[1.5, 5.25],
     ps_lag=3.0,
     summarize=True,
-    output_dir=r"C:\Users\bbyer\OneDrive\Documents\UniversityofKentucky\BachstetterLab\ephys_toolbox\data2",
+    output_dir=r"C:\Users\bbyer\OneDrive\Documents\UniversityofKentucky\BachstetterLab\ephys_toolbox\ephys_toolbox\data2",
 )
 
 analyzers = [

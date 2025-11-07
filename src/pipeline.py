@@ -44,9 +44,19 @@ class Pipeline:
         self.analyzers = [an for an in analyzers if an.config.enabled]
 
     def run(self):
+        resolved_paths = self._resolve_paths(self.config.paths)
         summary_tables: List[pd.DataFrame] = []
 
-        for abf_path in self._resolve_paths(self.config.paths):
+        if not resolved_paths:
+            return None
+
+        summary_root = (
+            Path(self.config.output_dir)
+            if self.config.output_dir
+            else resolved_paths[0].parent
+        )
+
+        for abf_path in resolved_paths:
             base_dir = (
                 Path(self.config.output_dir) / abf_path.stem
                 if self.config.output_dir
@@ -74,6 +84,7 @@ class Pipeline:
             epsp = context.get_feature("epsp")
             ps = context.get_feature("pop_spike")
 
+            self._write_feature_tables(context, results_dir)
             self._make_derivative_plots(context, fv, epsp, ps, deriv_dir)
             self._make_summary_plots(context, fv, epsp, ps, io_dir, other_dir)
 
@@ -96,7 +107,14 @@ class Pipeline:
 
         if self.config.summarize and summary_tables:
             summary_df = pd.concat(summary_tables, ignore_index=True)
-            summary_path = Path.cwd() / "results_summary.csv"
+            summary_root.mkdir(parents=True, exist_ok=True)
+            timestamp = (
+                pd.Timestamp.now()
+                .isoformat(timespec="seconds")
+                .replace(":", "-")
+                .replace("T", "_")
+            )
+            summary_path = summary_root / f"run_summary_{timestamp}.csv"
             summary_df.to_csv(summary_path, index=False)
             return summary_df
 
@@ -112,6 +130,13 @@ class Pipeline:
             "sampling_rate": avg.attrs.get("sampling_rate"),
         }
         return RecordingContext(abf_path=abf_path, tidy=tidy, averaged=avg, metadata=metadata)
+
+    def _write_feature_tables(self, context: RecordingContext, results_dir: Path):
+        for name, df in context.features.items():
+            if df is None or df.empty:
+                continue
+            path = results_dir / f"{name}.csv"
+            df.to_csv(path, index=False)
 
     def _make_derivative_plots(self, context, fv, epsp, ps, deriv_dir: Path):
         avg = context.averaged
