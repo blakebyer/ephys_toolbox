@@ -1,0 +1,20 @@
+[project]
+name = "ephys-toolbox"
+version = "0.1.0"
+description = "Electrophysiology analysis helpers for ABF recordings."
+requires-python = ">=3.10"
+authors = [
+  { name = "Bachstetter Lab" }
+]
+dependencies = [
+  "numpy",
+  "pandas",
+  "matplotlib",
+  "scipy",
+  "click",
+  "pyabf",
+]
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
