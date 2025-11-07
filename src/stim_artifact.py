@@ -1,12 +1,7 @@
 """
-TODO:
-Stim artifact removal methods:
-- linear interpolation
-- cubic spline interpolation
-- cropping or blanking
-- template subtraction (requires many examples at same stimulus)
+Module for removing stimulation artifacts from electrophysiological recordings.
 """
-from ephys_toolbox.production.utils import to_samples
+from ephys_toolbox.src.utils import to_samples
 import pandas as pd
 
 def remove_stim_artifact(abf_df, stim_window: list[float]=[0.0,1.0]):

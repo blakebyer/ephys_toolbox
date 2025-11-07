@@ -1,6 +1,6 @@
 import pyabf 
 import pandas as pd
-from ephys_toolbox.production.utils import smooth
+from ephys_toolbox.src.utils import smooth
 from typing import List, Optional
 import numpy as np
 from pathlib import Path
